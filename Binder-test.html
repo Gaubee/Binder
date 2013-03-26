@@ -1,0 +1,44 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+ <head>
+  <title> Binder-javascript lib </title>
+  <meta name="Author" content="">
+  <meta name="Keywords" content="">
+  <meta name="Description" content="">
+  <script type="text/javascript" src = "v0.1.js">
+  <!--
+	
+  //-->
+  </script>
+ </head>
+
+ <body>
+  <input type="text" id="Text1" onchange="this.set(this.value)" />
+  <input type="text" id="Text2" onchange="this.set(this.value)" />
+  <a id="A1">single</a>
+  <a id="A2" style="color:#0FF0FF">double</a>
+  <a id="A3" style="color:#F00FFF">three</a>
+ </body>
+</html>
+  <script type="text/javascript">
+  <!--
+      var T1 = Binder(document.getElementById("Text1"));
+      var T2 = Binder(document.getElementById("Text2"));
+      T1.binding(T2);
+      T2.binding(T1);
+
+      var A1 = Binder(document.getElementById("A1"), "innerHTML");
+
+      T1.binding(A1, { updateKey: ["innerHTML", "title"] });
+ //     A1.monitor(T1, function () { console.log(this); this.innerHTML = T1.get(); });
+
+      var A2 = Binder(function (t1,t2) {
+          document.getElementById("A2").innerHTML = t1.get() + " " + t2.get();
+      }, [T1, T2]);
+
+
+      T1.binding(document.getElementById("A3"), function (binder) {
+          binder.innerHTML = "hee:" + this.value;
+      });
+  //-->
+  </script>
