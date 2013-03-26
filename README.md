@@ -83,3 +83,10 @@ var fullname = Binder(function (n1,n2) {
           document.getElementById("fullname").innerHTML = n1.get() + " " + n2.get();
       }, [firstname,lastname]);
 ```
+
+
+# 实现方案
+
+## 初始化
+
+
