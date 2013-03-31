@@ -14,22 +14,16 @@ module.exports = {
     },
     TimeOut: function (fn, time, objarr)//要定时运行的函数，[定时时间]，[fn（）内的参数，数组形式传递]
     {
-        time = time || 0;
-
-        setTimeout(function () {
-            if (typeof objarr === "object") {
-                for (var i in objarr) {
-                    arguments[arguments.length] = objarr[i];
-                    arguments.length++;
-                }
-            } else {
-                arguments[0] = objarr;
-                arguments.length++;
-            }
-            fn.apply(fn, arguments);
-        }, time);
+        time = parseInt(time);
+        if (time.toString()!=='NaN') {
+            setTimeout(function () {
+                fn.apply(fn, objarr);
+            }, time);
+        }else{
+            fn.apply(fn, objarr);
+        }
     },
     GetType:function($){
-        return Object.prototype.toString.call($).split(' ')[1].replace(']','').toLowerCase();
+        return Object.prototype.toString.call($).split(' ')[1].replace(']','');//.toLowerCase();
     }
 };

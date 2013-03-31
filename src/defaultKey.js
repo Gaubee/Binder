@@ -1,5 +1,5 @@
 module.exports = {
     'htmlinputelement':'value',
-    'object':'content',
+    'Object':'content',
     'other':'innerHTML',
 };
