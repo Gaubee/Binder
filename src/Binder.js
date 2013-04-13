@@ -71,7 +71,10 @@ var defaultKey = require('./defaultKey.js');
 
     _privates.prototype = {
                 _update: function (con) {//更新
-                    //con:guarantor:int(更新发起者),participants:string/*|int|int*/(已参与者),updateKeys:string[]//被更新的关键字,argus:object(附带参数)
+                    //con:guarantor:int(更新发起者),
+                    //participants:string/*|int|int*/(已参与者),
+                    //updateKeys:string[]//被更新的关键字,
+                    //argus:object(附带参数)
                     var BindersID = this._bindersId.split('|'),
                         BinderMessages = this._binder_messages,
                         i,
@@ -88,11 +91,7 @@ var defaultKey = require('./defaultKey.js');
                         per_binder_key,
                         k,
                         binder_key_length,
-                        _con = {
-                            guarantor:con.guarantor,
-                            participants:'',
-                            updateKeys:[]
-                        };
+                        _con;
 
                     con.participants = con.participants + this._id+'|'; //将自身写入参与者id
                     //注意要实现自身绑定更新
@@ -115,13 +114,26 @@ var defaultKey = require('./defaultKey.js');
                                 
                                 binder_keys = per_binder_message.bindKeys;//某条绑定信息的关键字(自变亮)
                                 binder_key_length = binder_keys.length;
-                                for ( k = 0; k < binder_keys.length; k = k+1) {
-                                    per_binder_key = binder_keys[k];
-                                    if (Tools.ArrayIndexOf(con.updateKeys,per_binder_key) !== -1) {//更新的关键字(由_set函数返回，表示本次改变的关键字集合)是否在绑定关键字队列中
-                                        _con.updateKeys[_con.updateKeys.length] = per_binder_key;
+                                if (Tools.GetType(con.updateKeys) === "Array") {//如果是有多个关键字被更新
+                                    for ( k = 0; k < binder_keys.length; k = k+1) {
+                                        per_binder_key = binder_keys[k];
+                                        if (Tools.ArrayIndexOf(con.updateKeys,per_binder_key) !== -1 ) {//更新的关键字(由_set函数返回，表示本次改变的关键字集合)是否在绑定关键字队列中
+                                            _con= {//全新的副本，保证更新队列的信息不会互相影响
+                                                guarantor:con.guarantor,
+                                                participants:con.participants,
+                                                updateKeys:per_binder_message.updateKeys
+                                            };
+                                            break;
+                                        };
+                                    } 
+                                }else if(Tools.ArrayIndexOf(binder_keys,con.updateKeys) !== -1){
+                                    _con= {//全新的副本，保证更新队列的信息不会互相影响
+                                        guarantor:con.guarantor,
+                                        participants:con.participants,
+                                        updateKeys:per_binder_message.updateKeys
                                     };
-                                }
-                                if (con.participants.indexOf('|' + binder_id + '|') === -1||per_binder_message.weight<this._weight||((per_binder_message.weight === this._weight)&&per_binder_message.compromise)||per_binder_message.forceUpdate) {
+                                };
+                                if (con.participants.indexOf('|' + binder_id + '|') === -1||per_binder_message.weight>this._weight||((per_binder_message.weight === this._weight)&&per_binder_message.compromise)||per_binder_message.forceUpdate) {
                                     //不重复更新，除非配置信息为妥协更新（被更新着妥协）或者强制更新
                                     Tools.TimeOut(function (BM, C) {
                                         var _super,
@@ -159,7 +171,7 @@ var defaultKey = require('./defaultKey.js');
             };
     _publicsBase.prototype = {
         info: {"name":"binders"},
-        weight: function (privates,w) {//1~200,int
+        weight: function (privates,w) {//1~200,int//越大越好
             if (arguments.length === 1) {
                 return privates._weight;
             }else{
@@ -198,18 +210,18 @@ var defaultKey = require('./defaultKey.js');
                 throw new Error("Binder error : object must be a Binder-object");
                 return false;
             }
-            var binder_id = opction.Binder.getId(),bindKeys = opction['bindKeys'],updateKey = opction['updateKey'];
-            if(typeof bindKeys !== "object"){
+            var binder_id = opction.Binder.getId(),bindKeys = opction['bindKeys'],updateKeys = opction['updateKeys'];
+            if(Tools.GetType(bindKeys) !== "Array"){
                 bindKeys = [bindKeys+""];//toString && toArray 
             }
-            // if(typeof updateKey !== "object"){
-            //     updateKey = [updateKey+""];//toString && toArray 
+            // if(Tools.GetType(updateKey) !== "Array"){
+            //     updateKeys = [updateKeys+""];//toString && toArray 
             // }
             var BindersMessage = {
                 binder: binder_id,
                 environment: this.getId(), //上下文作用域
                 bindKeys: bindKeys || [allBinders[this.getId()].privates._key],//多个
-                updateKey: updateKey+'' || allBinders[binder_id].privates._key,//一个
+                updateKeys: updateKeys+'' || allBinders[binder_id].privates._key,//多个
                 relationship:opction['relationship']||function(binder,BindersMessage){//call by publics
                         var updateObject = {};//带路由信息的set
                         updateObject[BindersMessage.updateKey] = this.get(BindersMessage.bindKey);
@@ -221,6 +233,7 @@ var defaultKey = require('./defaultKey.js');
                 forceUpdate: !!opction["forceUpdate"], //是否强制更新
                 compromise: !!opction["compromise"],//权重相等时是否妥协更新，默认 不妥协
             }
+            //存储binder信息数组，权重对比，调整更新顺序，不可再对比binderKeys，binderKeys是多个，会混乱绑定更新机制
             privates._binder_messages[binder_id] = [BindersMessage];
             privates._bindersId += binder_id + "|";
         },
@@ -422,7 +435,7 @@ test.binding({
     Binder:test2,
     // updateKey:'name',
     // bindKeys:[""]
-    synUpdate:true//同步更新，默认为 异步
+    synUpdate:true//同步更新，默认为 异步，异步情况下实现权重绑定，权重越大更新越后
 });
 
 test.set("okok")
